@@ -1,0 +1,4 @@
+os
+requests
+threading
+telegram.ext
